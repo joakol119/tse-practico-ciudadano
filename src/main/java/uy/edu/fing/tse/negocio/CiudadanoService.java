@@ -2,19 +2,28 @@ package uy.edu.fing.tse.negocio;
 
 import java.time.LocalDate;
 import java.util.List;
+import jakarta.annotation.Resource;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
+import jakarta.inject.Inject;
+import jakarta.jms.JMSContext;
+import jakarta.jms.Queue;
 import uy.edu.fing.tse.datos.CiudadanoDAOLocal;
 import uy.edu.fing.tse.entidad.Ciudadano;
 
 @Stateless
 public class CiudadanoService implements CiudadanoServiceRemote, CiudadanoServiceLocal {
 
-    // Pesos del algoritmo de validación de cédula uruguaya
     private static final int[] PESOS = {2, 9, 8, 7, 6, 3, 4};
 
     @EJB
     private CiudadanoDAOLocal ciudadanoDAO;
+
+    @Inject
+    private JMSContext jmsContext;
+
+    @Resource(lookup = "java:/jms/queue/queue_alta_ciudadano")
+    private Queue queueAltaCiudadano;
 
     @Override
     public void agregarCiudadano(long cedula, String correo, LocalDate fechaPrimerLogin) {
@@ -27,6 +36,14 @@ public class CiudadanoService implements CiudadanoServiceRemote, CiudadanoServic
     }
 
     @Override
+    public void agregarCiudadanoPorJMS(long cedula, String correo, LocalDate fechaPrimerLogin) {
+        // Envia el mensaje a la cola; el alta real la procesa el MDB
+        // de forma asincrona, permitiendo paralelizar las altas.
+        String mensaje = cedula + "|" + correo + "|" + fechaPrimerLogin;
+        jmsContext.createProducer().send(queueAltaCiudadano, mensaje);
+    }
+
+    @Override
     public List<Ciudadano> obtenerCiudadanos() {
         return ciudadanoDAO.obtenerCiudadanos();
     }
@@ -36,8 +53,6 @@ public class CiudadanoService implements CiudadanoServiceRemote, CiudadanoServic
         return ciudadanoDAO.buscarPorCedula(cedula);
     }
 
-    // Regla de negocio: valida el digito verificador segun el
-    // algoritmo de la cedula de identidad uruguaya.
     private boolean cedulaValida(long cedula) {
         String cedulaStr = String.valueOf(cedula);
         if (cedulaStr.length() != 8) {

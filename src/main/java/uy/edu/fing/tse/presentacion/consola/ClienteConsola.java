@@ -14,9 +14,6 @@ import uy.edu.fing.tse.negocio.CiudadanoServiceRemote;
 
 public class ClienteConsola {
 
-    // Nombre JNDI global del Session Bean remoto. Si Wildfly no lo
-    // encuentra con este nombre, hay que ajustarlo mirando la consola
-    // de administracion (localhost:9990) o el log de deploy.
     private static final String JNDI_NAME =
         "ejb:/ciudadano/CiudadanoService!uy.edu.fing.tse.negocio.CiudadanoServiceRemote";
 
@@ -37,6 +34,9 @@ public class ClienteConsola {
                     break;
                 case "3":
                     buscarPorCedula(service, scanner);
+                    break;
+                case "4":
+                    agregarCiudadanoPorJMS(service, scanner);
                     break;
                 case "0":
                     salir = true;
@@ -60,6 +60,7 @@ public class ClienteConsola {
         System.out.println("1) Agregar ciudadano");
         System.out.println("2) Listar ciudadanos");
         System.out.println("3) Buscar por cedula");
+        System.out.println("4) Agregar ciudadano via JMS (asincrono)");
         System.out.println("0) Salir");
         System.out.print("Opcion: ");
     }
@@ -77,6 +78,23 @@ public class ClienteConsola {
             System.out.println("Ciudadano agregado correctamente.");
         } catch (CedulaInvalidaException e) {
             System.out.println("Error: " + e.getMessage());
+        } catch (NumberFormatException | DateTimeParseException e) {
+            System.out.println("Error de formato: " + e.getMessage());
+        }
+    }
+
+    private static void agregarCiudadanoPorJMS(CiudadanoServiceRemote service, Scanner scanner) {
+        try {
+            System.out.print("Cedula (8 digitos): ");
+            long cedula = Long.parseLong(scanner.nextLine().trim());
+            System.out.print("Correo electronico: ");
+            String correo = scanner.nextLine().trim();
+            System.out.print("Fecha primer login (yyyy-MM-dd): ");
+            LocalDate fecha = LocalDate.parse(scanner.nextLine().trim());
+
+            service.agregarCiudadanoPorJMS(cedula, correo, fecha);
+            System.out.println("Mensaje enviado a la cola. El alta se procesara de forma asincrona.");
+            System.out.println("(la validacion de cedula ocurre del lado del MDB al procesar el mensaje)");
         } catch (NumberFormatException | DateTimeParseException e) {
             System.out.println("Error de formato: " + e.getMessage());
         }
