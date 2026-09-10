@@ -2,16 +2,23 @@ package uy.edu.fing.tse.entidad;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
+@Entity
+@Table(name = "ciudadano")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Ciudadano implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @Id
     private long cedula;
+
     private String correoElectronico;
 
     @XmlJavaTypeAdapter(LocalDateAdapter.class)

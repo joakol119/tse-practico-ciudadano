@@ -1,29 +1,29 @@
 package uy.edu.fing.tse.datos;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import jakarta.ejb.Singleton;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import uy.edu.fing.tse.entidad.Ciudadano;
 
 @Singleton
 public class CiudadanoDAO implements CiudadanoDAORemote, CiudadanoDAOLocal {
 
-    private final Map<Long, Ciudadano> ciudadanos = new ConcurrentHashMap<>();
+    @PersistenceContext(unitName = "ciudadanoPU")
+    private EntityManager em;
 
     @Override
     public void altaCiudadano(Ciudadano c) {
-        ciudadanos.put(c.getCedula(), c);
+        em.persist(c);
     }
 
     @Override
     public List<Ciudadano> obtenerCiudadanos() {
-        return new ArrayList<>(ciudadanos.values());
+        return em.createQuery("SELECT c FROM Ciudadano c", Ciudadano.class).getResultList();
     }
 
     @Override
     public Ciudadano buscarPorCedula(long cedula) {
-        return ciudadanos.get(cedula);
+        return em.find(Ciudadano.class, cedula);
     }
 }
